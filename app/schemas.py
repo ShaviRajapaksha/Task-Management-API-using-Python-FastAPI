@@ -1,15 +1,25 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+import re
 
 # User schemas
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str  # Changed from EmailStr to str
     username: str
+    
+    # Add custom validation for email
+    @validator('email')
+    def validate_email(cls, v):
+        # Simple email validation
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, v):
+            raise ValueError('Invalid email format')
+        return v
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., min_length=6)
 
 class UserLogin(BaseModel):
     username: str
@@ -33,7 +43,7 @@ class TokenData(BaseModel):
 
 # Category schemas
 class CategoryBase(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = None
 
 class CategoryCreate(CategoryBase):
@@ -65,10 +75,10 @@ class TaskCreate(TaskBase):
     pass
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
-    priority: Optional[int] = None
+    priority: Optional[int] = Field(None, ge=1, le=3)
     due_date: Optional[datetime] = None
     category_id: Optional[int] = None
 
@@ -81,6 +91,3 @@ class TaskResponse(TaskBase):
     
     class Config:
         from_attributes = True
-
-
-        
